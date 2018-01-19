@@ -1,0 +1,78 @@
+<% render :template => 'stars/index' %>
+<% @current_shop = params[:current_shop_name] %>
+<% @sec_shop_name =  params[:shop_name] %>
+<% @sec_api_key = params[:api_key] %>
+<% @sec_api_password = params[:password] %>
+<%
+	#Insert the data in database
+db = SQLite3::Database.new('migrate.db')
+create_table = db.execute <<-SQL 
+CREATE TABLE IF NOT EXISTS migration (
+	 shop_name varchar(500),
+	 migrate_shop_name varchar(500),
+	 api_key varchar(200),
+	 password varchar(200)
+);
+SQL
+#Fetch the data of given shop if available
+get_sec_shop_details =  db.execute("SELECT * from migration where `migrate_shop_name`=?",[@sec_shop_name]);
+if get_sec_shop_details.length == 0
+	db.execute("INSERT INTO migration(shop_name,migrate_shop_name,api_key,password) VALUES(?,?,?,?)",[@current_shop,@sec_shop_name ,@sec_api_key , @sec_api_password])
+end	
+#End Fetch the data of given shop if available
+
+%>
+<% 
+	#Second Shop connection
+	if @sec_shop_name
+		@connection = ShopifyAPI::Base.site = "https://#{@sec_api_key}:#{@sec_api_password}@#{@sec_shop_name}/admin"
+		@shop_data = ShopifyAPI::Shop.current
+		@total_shop_product = ShopifyAPI::Product.count() #Count the products in shop
+		@sec_shop_products = ShopifyAPI::Product.find(:all, params: { limit: 250 })
+	end	
+	#End Second Shop connection
+%>
+<%
+#Find the list of other shop sku
+def fetch_second_shop_sku
+	@second_shop_sku = []
+	@sec_shop_products.each do |sec_product|  #Product Data
+		@sec_product_varients = sec_product.variants
+		@sec_product_varients.each do |sec_varient|   #Variant data
+			@second_shop_sku.push(sec_varient.sku)
+		end			
+	end	
+	return @second_shop_sku
+end	
+#Find the list of other shop sku
+%>
+<%
+def fetch_current_shop_sku
+	@current_shop_product_sku = []
+	@products.each do |product|  #Product Data
+		@product_varients = product.variants
+		@product_varients.each do |varient|   #Variant data
+			@current_shop_product_sku.push(varient.sku)
+		end #End varient data code
+	end #End Product Data
+	return @current_shop_product_sku
+end
+@current_shop_sku_details =  fetch_current_shop_sku
+@second_shop_sku_details = fetch_second_shop_sku
+%>
+<h3>Select the sku you don't want to update</h3>
+<%= form_tag("/migrate", method: "post") do %>
+	<% 
+	@intersection = (@current_shop_sku_details & @second_shop_sku_details) 
+	@matching_sku_details = @intersection.reject(&:empty?) #Remove the black value from array
+	@matching_sku_details.each do |mat_sku|
+	%> 
+		<p><%= check_box_tag 'matched_sku[]',mat_sku -%><%= mat_sku %></p>		
+	<% end %>
+	<div style="display:none;">
+	<%= text_field_tag :shop_name, @sec_shop_name %>
+	<%= text_field_tag :api_key, @sec_api_key %>
+	<%= text_field_tag :password, @sec_api_password %>
+	</div>
+	<%= submit_tag :Submit,value:"Import Product",name:"update_product_with_sku" %>
+<% end %>

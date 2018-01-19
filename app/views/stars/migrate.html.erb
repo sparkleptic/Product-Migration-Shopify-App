@@ -1,0 +1,191 @@
+<% 
+render :template => 'stars/index' 
+render :template => 'stars/update_product' 
+@not_update_sku = params[:matched_sku] #sku will not update
+@matching_sku_details #sku already exist in migrate shop
+
+@migrated_shop_product_details = @sec_shop_products #migrate shop product details
+
+#Create the already exist array with id
+def fetch_migrate_shop_sku_id
+	@already_exist_sku_id = []
+	@migrated_shop_product_details.each do |mig_sec_product|  #Product Data
+		@sec_product_varients = mig_sec_product.variants
+		@sec_product_varients.each do |mig_sec_varient|   #Variant data
+			if @matching_sku_details.include?mig_sec_varient.sku
+				@mig_shop_sku = [
+					{
+						mig_sec_varient.sku => mig_sec_product.id
+					}
+				]
+				@already_exist_sku_id = @already_exist_sku_id|@mig_shop_sku
+			end	
+		end			
+	end	
+	return @already_exist_sku_id
+end	
+#Create the already exist array with id
+@final_sku_id =  fetch_migrate_shop_sku_id
+def get_pro_id_via_sku(search_sku)
+	@final_sku_id.each do |pro_id|
+		pro_id.each do |pro_id_details|
+			unless pro_id_details[0]!=search_sku
+				@product_id_for_sku=pro_id_details[1]	
+				return @product_id_for_sku
+			end 
+		end	
+	end
+end	
+#@get_pro_id =  get_pro_id_via_sku("WR5001")
+
+#Get the form data
+@not_update_sku = params[:matched_sku]
+if !@not_update_sku
+	@not_update_sku = ["XXXXXX123"]
+end	
+@shop_name =  params[:shop_name]
+@api_key = params[:api_key]
+@api_password = params[:password]
+#End Get the form data
+ShopifyAPI::Base.site = "https://#{@api_key}:#{@api_password}@#{@shop_name}/admin"
+def get_the_specific_varient_data(sku)
+	@migrated_shop_product_details.each do |pro_via_sku|  #Product Data
+		@sec_product_varients = pro_via_sku.variants
+		@sec_product_varients.each do |var_data|   #Variant data
+			if var_data.sku==sku
+				return var_data
+			end	
+		end			
+	end	
+end	
+%>
+<%
+@total_product = ShopifyAPI::Product.count() #Count the products in shop
+	@products.each do |product|  #Product Data
+		@product_images = product.images
+		images = []
+		image = {}
+		@product_images.each do |image_link|
+			image["src"] = image_link.src
+		end		
+		images << image	
+		@product_title = product.title
+		@product_handle = product.handle
+		@product_description = product.body_html
+		@product_vendor = product.vendor
+		@product_product_type = product.product_type
+		@product_created_at = product.created_at
+		@product_tags = product.tags
+		@product_varients = product.variants
+		@product_variant_array = []
+		@new_product=1
+		@product_varients.each do |varient|   #Variant data
+			if @matching_sku_details.include?varient.sku #update the existing product
+				@get_update_pro_id =  get_pro_id_via_sku(varient.sku) #update product id
+			else				
+				@get_update_pro_id = 0
+			end	
+			@varient_title = varient.title
+			@varient_price = varient.price
+			@varient_sku = varient.sku
+			@varient_position = varient.position
+			@varient_inventory_policy = varient.inventory_policy
+			@varient_compare_at_price = varient.compare_at_price
+			@varient_fulfillment_service = varient.fulfillment_service
+			@varient_inventory_management = varient.inventory_management
+			@varient_option1 = varient.option1
+			@varient_option2 = varient.option2
+			@varient_option3 = varient.option3
+			@varient_taxable = varient.taxable
+			@varient_barcode = varient.barcode
+			@varient_grams = varient.grams
+			@varient_inventory_quantity = varient.inventory_quantity
+			@varient_weight = varient.weight
+			@varient_weight_unit = varient.weight_unit
+			@varient_requires_shipping = varient.requires_shipping
+			if !@not_update_sku.include?@varient_sku
+				@product_variant_array_content = [
+					{
+					  "option1" => @varient_option1,
+					  "option2" => @varient_option2,
+					  "option3" => @varient_option3,
+					  "position" => @varient_position,
+					  "price" => @varient_price,
+					  "compare_at_price"=>@varient_compare_at_price,
+					  "sku" => @varient_sku,
+					  "inventory_quantity" => @varient_inventory_quantity,
+					  "inventory_management" => @varient_inventory_management,
+					  "taxable" => @varient_taxable,
+					  "inventory_policy" =>@varient_inventory_policy,
+					  "fulfillment_service"=>@varient_fulfillment_service,
+					  "requires_shipping" => @varient_requires_shipping,
+					  "barcode" =>@varient_barcode,
+					  "grams" =>@varient_grams,
+					  "weight"=>@varient_weight,
+					  "weight_unit"=>@varient_weight_unit
+					}
+				]
+				@product_variant_array += @product_variant_array_content
+			else
+				@varient_data = get_the_specific_varient_data(@varient_sku)
+				@product_variant_array_content = [
+					{
+					  "option1" => @varient_option1,
+					  "option2" => @varient_option2,
+					  "option3" => @varient_option3,
+					  "position" => @varient_position,
+					  "price" => @varient_data.price,
+					  "compare_at_price"=>@varient_data.compare_at_price,
+					  "sku" => @varient_data.sku,
+					  "inventory_quantity" => @varient_data.inventory_quantity,
+					  "inventory_management" => @varient_data.inventory_management,
+					  "taxable" => @varient_taxable,
+					  "inventory_policy" =>@varient_data.inventory_policy,
+					  "fulfillment_service"=>@varient_fulfillment_service,
+					  "requires_shipping" => @varient_data.requires_shipping,
+					  "barcode" =>@varient_data.barcode,
+					  "grams" =>@varient_data.grams,
+					  "weight"=>@varient_data.weight,
+					  "weight_unit"=>@varient_data.weight_unit
+					}
+				]
+				@product_variant_array += @product_variant_array_content
+			end	
+		end	#end the variation loop 
+		if @get_update_pro_id!=0 #update
+			update_product = ShopifyAPI::Product.find(@get_update_pro_id)
+			update_product.title = @product_title
+			update_product.product_type = @product_product_type
+			update_product.vendor = @product_vendor
+			update_product.body_html = @product_description
+			update_product.tags = @product_tags
+			update_product.published = "true"
+			update_product.images = images
+			if @varient_option1 !="Default Title"
+				update_product.options = [{"name" => "Size"}, {"name" => "Color"}]
+			end	
+			update_product.variants = @product_variant_array
+			update_product.save
+		else #end update and start create
+			%>
+			<p>Create New Product <%= "#{@get_update_pro_id} - Title #{@product_title}" %> </p>
+			<%
+			new_product = ShopifyAPI::Product.new
+			new_product.title = @product_title
+			new_product.product_type = @product_product_type
+			new_product.vendor = @product_vendor
+			new_product.body_html = @product_description
+			new_product.tags = @product_tags
+			new_product.published = "true"
+			new_product.images = images
+			if @varient_option1 !="Default Title"
+				new_product.options = [{"name" => "Size"}, {"name" => "Color"}]
+			end	
+			product_id = new_product.save
+			new_product.variants = @product_variant_array
+			new_product.save
+			#End Create product in shop
+		end #end create
+	end #end the product loop	
+%>	
+<h1 style="color:green;">Product Imported Successfully !!!</h1>		

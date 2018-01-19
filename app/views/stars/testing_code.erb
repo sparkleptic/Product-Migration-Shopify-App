@@ -1,0 +1,57 @@
+<%
+#!/bin/ruby
+require 'shopify_api'
+# This is an example script for the course "Mastering Shopify Apps"
+# available at http://gavinballard.com/msa/. You're free to use and
+# modify this script as desired.
+
+# Define authentication parameters. You should update these with the
+# authentication details for your own shop and private application.
+
+# db = SQLite3::Database.open('migrate.db')
+# @migrate_shop = "app-developement.myshopify.com"
+
+# shopify_shop='minimum-order-discount.myshopify.com'
+# shopify_api_key='e3d1834713325e6333d49e9bcd8f4287'
+# shopify_password='945e7ab316ccd17309626918b6099ef1'
+
+# @connection = ShopifyAPI::Base.site = "https://#{shopify_api_key}:#{shopify_password}@#{shopify_shop}/admin"
+# @shop_data = ShopifyAPI::Shop.current
+
+# Configure the Shopify API with our authentication credentials.
+
+#Testing code
+shopify_shop='app-developement.myshopify.com'
+shopify_api_key='def34550682f3d29644ba4b74d843229'
+shopify_password='8c4317e9bce768bb5d1b57e9b9ada459'
+
+@connection = ShopifyAPI::Base.site = "https://#{shopify_api_key}:#{shopify_password}@#{shopify_shop}/admin"
+@shop_data = ShopifyAPI::Shop.current
+#End Testing code
+
+@total_shop_product = ShopifyAPI::Product.count() #Count the products in shop
+@total_shop_pages = (@total_shop_product/250)
+@total_remaining_pages = (@total_shop_product%250)
+if @total_remaining_pages!=0
+	@total_shop_pages+=1
+end	
+#ShopifyAPI::Product.find(:all,params: {limit: 20, page: 1})
+%>
+<%
+	@i=1
+	while @i <= @total_shop_pages
+		@products = ShopifyAPI::Product.find(:all,params: {limit: 20, page: @i})
+%>
+	<p><%= "Current Iteration is #{@products.class}" %></p>
+	<hr>
+	<br>
+<%		
+	@i+=1
+	end	
+%>
+
+
+
+
+<p><%= "Total shop products - #{@total_shop_product}" %></p>
+<p><%= "Total shop products Pages - #{@total_shop_pages}" %></p>

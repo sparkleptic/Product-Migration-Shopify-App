@@ -1,0 +1,67 @@
+<%
+#!/bin/ruby
+require 'shopify_api'
+# This is an example script for the course "Mastering Shopify Apps"
+# available at http://gavinballard.com/msa/. You're free to use and
+# modify this script as desired.
+
+# Define authentication parameters. You should update these with the
+# authentication details for your own shop and private application.
+
+
+# db = SQLite3::Database.open('migrate.db')
+# @migrate_shop = "app-developement.myshopify.com"
+
+shopify_shop='minimum-order-discount.myshopify.com'
+shopify_api_key='e3d1834713325e6333d49e9bcd8f4287'
+shopify_password='945e7ab316ccd17309626918b6099ef1'
+
+# Configure the Shopify API with our authentication credentials.
+@connection = ShopifyAPI::Base.site = "https://#{shopify_api_key}:#{shopify_password}@#{shopify_shop}/admin"
+@shop_data = ShopifyAPI::Shop.current
+
+# session = ShopifyAPI::Session.new(shopify_shop)
+# scope = ["write_products"]
+# permission_url = session.create_permission_url(scope)
+
+#@varient_details =  ShopifyAPI::Variant.find(:all,params:{:sku =>'772201' }).first
+# @search_sku = "772202"
+
+#Test code
+#@pro_de = ShopifyAPI::Product.where({:sku => "772201", :handle => "10-christmas-trivia-scratch-cards-dazzling-christmas"})
+#Test code
+@shop_id = @shop_data.id #Shop Id
+@shop_name = @shop_data.name #
+@shop_domain = @shop_data.domain
+@shop_email = @shop_data.email
+
+#orders = ShopifyAPI::Order.find(:all, params: { created_at_min: (Time.now - 30.days), limit: 250 }) #Get Order data
+
+#new_product = ShopifyAPI::Product.create(:handle => 'foo', :title => 'Test Product 06-01-2018') #Create new product
+
+# @product_id = 708425973803
+# @products = ShopifyAPI::Product.find(@product_id) #Get product via id
+# @collection_id = 36102832171
+# @total_collection_product = ShopifyAPI::Product.count(:collection_id => @collection_id) #Count the products in collection
+@total_shop_product = ShopifyAPI::Product.count() #Count the products in shop
+if @total_shop_product > 250
+	@total_shop_product=250
+end	
+
+#products = ShopifyAPI::Product.find(:all) #Get all product
+@products = ShopifyAPI::Product.find(:all, params: { limit: 5 }) #Get products with limit
+%>
+<div id="get_shop_details_form">
+	<h2>Fill the below form to migrate the product in your shop</h2>
+	<div class="form_section">
+		<%= form_tag("/match_sku", method: "post") do %>
+			<%= text_field_tag :shop_name, "", class: 'shop_name_field form-control',required: "true",placeholder:"shopname.com" %>
+			<%= text_field_tag :api_key, "", class: 'api_key_field form-control',required: "true",placeholder:"Api Key" %>
+			<%= text_field_tag :password, "", class: 'password_field form-control',required: "true",placeholder:"Api Password" %>
+			<p style="display:none;">
+				<%= text_field_tag :current_shop_name, @shop_domain, class: 'current_shop_name_field form-control' %>
+			</p>
+			<%= submit_tag :Submit,value:"Click to Update",name:"update_product_form" %>
+		<% end %>
+	</div>
+</div>
